@@ -1,0 +1,772 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Editar' if component else 'Nuevo' }} componente — ElectroCatalog{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('main.components_list') }}">Componentes</a></li>
+    {% if component %}
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('main.component_detail', id=component.id) }}">{{ component.name }}</a>
+    </li>
+    {% endif %}
+    <li class="breadcrumb-item active">{{ 'Editar' if component else 'Nuevo' }}</li>
+  </ol>
+</nav>
+
+<h2 class="mb-4">
+  <i class="bi bi-{{ 'pencil' if component else 'plus-circle' }} me-2"></i>
+  {{ 'Editar componente' if component else 'Nuevo componente' }}
+</h2>
+
+<div class="card">
+  <div class="card-body">
+    <form method="POST" action="{{ action }}">
+      <div class="row g-3">
+
+        {# ── Identificación ─────────────────────────────────────────────── #}
+        <div class="col-12"><h6 class="text-muted text-uppercase small fw-bold border-bottom pb-1">Identificación</h6></div>
+
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+          <input type="text" name="name" class="form-control"
+                 value="{{ component.name if component else '' }}" required autofocus>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Categoría <span class="text-danger">*</span></label>
+          <select id="category_id" name="category_id" class="form-select" required>
+            <option value="" data-cat="">Seleccionar…</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" data-tipo="{{ cat.tipo or '' }}"
+              {% if component and component.category_id == cat.id %}selected
+              {% elif request.args.get('category_id')|int == cat.id %}selected
+              {% endif %}>
+              {{ cat.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {# URL imagen — fila 1, columna derecha ancha #}
+        <div class="col-md-5">
+          <label class="form-label fw-semibold">URL imagen</label>
+          <div class="input-group input-group-sm">
+            <input type="text" name="image_url" id="image_url_input" class="form-control"
+                   value="{{ component.image_url if component else '' }}"
+                   placeholder="URL o archivo local">
+            <button type="button" class="btn btn-outline-secondary" id="btn-img-upload"
+                    title="Subir imagen local"><i class="bi bi-upload"></i></button>
+            <button type="button" class="btn btn-outline-secondary"
+                    data-bs-toggle="modal" data-bs-target="#modalImagenes"
+                    title="Explorar static/"><i class="bi bi-folder2-open"></i></button>
+          </div>
+          <input type="file" id="file-img-input" accept="image/*" style="display:none">
+        </div>
+
+        {# Descripción (textarea) + Preview imagen: segunda fila, mismas proporciones #}
+        <div class="col-md-7 align-self-start">
+          <label class="form-label fw-semibold">Descripción</label>
+          <div id="description-editor"></div>
+          <textarea name="description" style="display:none">{{ component.description if component else '' }}</textarea>
+        </div>
+
+        <div class="col-md-5">
+          <div id="image_placeholder" class="rounded border"
+               style="width:100%; height:180px; background:#f8f9fa;
+                      display:{{ 'none' if (component and component.image_url) else 'flex' }};
+                      align-items:center; justify-content:center;">
+            <i class="bi bi-image text-secondary" style="font-size:3.5rem;"></i>
+          </div>
+          <div id="image_preview_wrap"
+               style="{{ '' if (component and component.image_url) else 'display:none;' }}">
+            <img id="image_preview"
+                 src="{{ component.image_url if (component and component.image_url) else '' }}"
+                 alt="Vista previa" class="rounded border d-block img-lightbox"
+                 style="width:100%; height:180px; object-fit:contain; background:#f8f9fa;">
+            <div class="text-muted small mt-1" id="image_preview_error" style="display:none;">
+              <i class="bi bi-exclamation-triangle text-warning"></i> No se puede cargar
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Cantidad en stock</label>
+          <input type="number" name="quantity" class="form-control" min="0"
+                 value="{{ component.quantity if component else 0 }}">
+        </div>
+
+        <div class="col-md-5">
+          <label class="form-label fw-semibold">
+            Estantería
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modalEstanteria"
+               class="ms-1 text-muted" title="Ver mapa de la estantería">
+              <i class="bi bi-question-circle"></i>
+            </a>
+          </label>
+          <input type="text" name="estanteria" class="form-control"
+                 value="{{ component.estanteria if component else '' }}"
+                 placeholder="ej: A1, B3">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Caja</label>
+          <input type="text" name="caja" class="form-control"
+                 value="{{ component.caja if component else '' }}"
+                 placeholder="ej: Caja azul, B4">
+        </div>
+
+        <div class="col-12">
+          <label class="form-label fw-semibold">URL del Datasheet</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-file-earmark-pdf text-danger"></i></span>
+            <input type="text" name="datasheet_url" class="form-control"
+                   value="{{ component.datasheet_url if component else '' }}"
+                   placeholder="https://...">
+            {% if component and component.datasheet_url %}
+            <a href="{{ component.datasheet_url }}" target="_blank" rel="noopener"
+               class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i></a>
+            {% endif %}
+          </div>
+        </div>
+
+        {# ── Parámetros técnicos (comunes + específicos) ─────────────────── #}
+        <div class="col-12 mt-2">
+          <fieldset style="border:1px solid #000; border-radius:4px; padding:1rem 1rem 0.75rem;">
+            <legend class="float-none w-auto px-2 mb-0"
+                    style="font-size:0.75rem; font-weight:700; text-transform:uppercase;
+                           letter-spacing:.05em; color:#6c757d;">
+              Parámetros técnicos
+            </legend>
+            <div class="row g-3">
+
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Encapsulado</label>
+                <input type="text" name="encapsulado" class="form-control"
+                       list="encapsulado-opts"
+                       value="{{ component.encapsulado if component else '' }}"
+                       placeholder="THT, SMD, 0603…">
+                <datalist id="encapsulado-opts">
+                  <option>THT</option><option>SMD</option>
+                  <option>0402</option><option>0603</option><option>0805</option><option>1206</option>
+                  <option>SOT-23</option><option>TO-92</option><option>TO-220</option>
+                  <option>DIP-8</option><option>DIP-14</option><option>DIP-16</option>
+                  <option>SOIC-8</option><option>QFP</option><option>QFN</option><option>BGA</option>
+                </datalist>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Tolerancia (%)</label>
+                <input type="number" name="tolerancia" class="form-control" step="any" min="0"
+                       value="{{ component.tolerancia if component else '' }}"
+                       placeholder="ej: 5">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Potencia máx. (W)</label>
+                <input type="number" name="potencia_w" class="form-control" step="any" min="0"
+                       value="{{ component.potencia_w if component else '' }}"
+                       placeholder="ej: 0.25">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Voltaje máx. (V)</label>
+                <input type="number" name="voltaje_max_v" class="form-control" step="any" min="0"
+                       value="{{ component.voltaje_max_v if component else '' }}"
+                       placeholder="ej: 50">
+              </div>
+
+              {# ── Específicos: Resistencias ── #}
+              <div id="sect-resistencia" class="col-12 d-none">
+                <h6 class="text-warning text-uppercase small fw-bold border-bottom pb-1">Resistencia</h6>
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold">Valor (Ω)</label>
+                    <input type="number" name="valor_ohm" class="form-control" step="any" min="0"
+                           value="{{ component.valor_ohm if component else '' }}"
+                           placeholder="ej: 10000 = 10 kΩ">
+                  </div>
+                </div>
+              </div>
+
+              {# ── Específicos: Condensadores ── #}
+              <div id="sect-condensador" class="col-12 d-none">
+                <h6 class="text-primary text-uppercase small fw-bold border-bottom pb-1">Condensador</h6>
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold">Capacitancia (µF)</label>
+                    <input type="number" name="capacitancia_uf" class="form-control" step="any" min="0"
+                           value="{{ component.capacitancia_uf if component else '' }}"
+                           placeholder="ej: 0.1 = 100 nF">
+                  </div>
+                </div>
+              </div>
+
+              {# ── Específicos: Inductores ── #}
+              <div id="sect-inductor" class="col-12 d-none">
+                <h6 class="text-success text-uppercase small fw-bold border-bottom pb-1">Inductor</h6>
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold">Inductancia (µH)</label>
+                    <input type="number" name="inductancia_uh" class="form-control" step="any" min="0"
+                           value="{{ component.inductancia_uh if component else '' }}"
+                           placeholder="ej: 100">
+                  </div>
+                </div>
+              </div>
+
+              {# ── Específicos: Microcontroladores ── #}
+              <div id="sect-microcontrolador" class="col-12 d-none">
+                <h6 class="text-danger text-uppercase small fw-bold border-bottom pb-1">Microcontrolador</h6>
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold">Flash (KB)</label>
+                    <input type="number" name="flash_kb" class="form-control" step="any" min="0"
+                           value="{{ component.flash_kb if component else '' }}"
+                           placeholder="ej: 256">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold">RAM (KB)</label>
+                    <input type="number" name="ram_kb" class="form-control" step="any" min="0"
+                           value="{{ component.ram_kb if component else '' }}"
+                           placeholder="ej: 32">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold">ROM / EEPROM (KB)</label>
+                    <input type="number" name="rom_kb" class="form-control" step="any" min="0"
+                           value="{{ component.rom_kb if component else '' }}"
+                           placeholder="ej: 1">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold">Voltaje operación (V)</label>
+                    <input type="number" name="voltaje_op_v" class="form-control" step="any" min="0"
+                           value="{{ component.voltaje_op_v if component else '' }}"
+                           placeholder="ej: 3.3">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold">Frecuencia (MHz)</label>
+                    <input type="number" name="frecuencia_mhz" class="form-control" step="any" min="0"
+                           value="{{ component.frecuencia_mhz if component else '' }}"
+                           placeholder="ej: 240">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold">Familia / Arquitectura</label>
+                    <input type="text" name="familia_ic" class="form-control"
+                           list="familia-opts"
+                           value="{{ component.familia_ic if component else '' }}"
+                           placeholder="ej: AVR, ARM Cortex-M0…">
+                  </div>
+                  <div class="col-md-5">
+                    <label class="form-label fw-semibold">Conectividad inalámbrica</label>
+                    <div class="d-flex gap-4">
+                      {% for name, label in [('wifi','WiFi'),('bt','Bluetooth'),('zigbee','Zigbee'),('lora','LoRa')] %}
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="{{ name }}" id="chk-{{ name }}"
+                               {{ 'checked' if (component and component[name]) else '' }}>
+                        <label class="form-check-label" for="chk-{{ name }}">{{ label }}</label>
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  {# Pinout microcontrolador #}
+                  <div class="col-12">
+                    <div class="pinout-widget d-flex gap-3 align-items-start"
+                         style="border:1px solid #dee2e6; border-radius:4px; padding:0.75rem;">
+                      <div class="flex-grow-1">
+                        <label class="form-label fw-semibold mb-1">Pinout / Diagrama</label>
+                        <div class="input-group input-group-sm">
+                          <span class="input-group-text"><i class="bi bi-diagram-3"></i></span>
+                          <input type="text" name="pinout_url" class="form-control pinout-url-input"
+                                 value="{{ component.pinout_url if component else '' }}"
+                                 placeholder="URL o archivo local">
+                          <button type="button" class="btn btn-outline-secondary pinout-upload-btn"
+                                  title="Subir imagen"><i class="bi bi-upload"></i></button>
+                          <button type="button" class="btn btn-outline-secondary pinout-browse-btn"
+                                  data-bs-toggle="modal" data-bs-target="#modalImagenes"
+                                  title="Explorar static/"><i class="bi bi-folder2-open"></i></button>
+                        </div>
+                        <input type="file" accept="image/*" class="pinout-file-input" style="display:none">
+                      </div>
+                      <div style="width:200px; flex-shrink:0;">
+                        <div class="pinout-placeholder rounded border"
+                             style="width:200px; height:140px; background:#f8f9fa;
+                                    display:{{ 'none' if (component and component.pinout_url) else 'flex' }};
+                                    align-items:center; justify-content:center;">
+                          <i class="bi bi-diagram-3 text-secondary" style="font-size:3rem;"></i>
+                        </div>
+                        <div class="pinout-preview-wrap"
+                             style="{{ '' if (component and component.pinout_url) else 'display:none;' }}">
+                          <img class="pinout-preview rounded border d-block img-lightbox"
+                               src="{{ component.pinout_url if (component and component.pinout_url) else '' }}"
+                               alt="Pinout"
+                               style="width:200px; height:140px; object-fit:contain; background:#f8f9fa;">
+                          <div class="pinout-error text-muted small mt-1" style="display:none;">
+                            <i class="bi bi-exclamation-triangle text-warning"></i> No se puede cargar
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {# ── Específicos: Circuitos Integrados ── #}
+              <div id="sect-ic" class="col-12 d-none">
+                <h6 class="text-info text-uppercase small fw-bold border-bottom pb-1">Circuito Integrado</h6>
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold">Familia / Tecnología</label>
+                    <input type="text" name="familia_ic" class="form-control"
+                           list="familia-opts"
+                           value="{{ component.familia_ic if component else '' }}"
+                           placeholder="ej: TTL, CMOS, AVR…">
+                    <datalist id="familia-opts">
+                      <option>TTL</option><option>CMOS</option><option>LV-CMOS</option>
+                      <option>AVR</option><option>ARM Cortex-M</option><option>PIC</option>
+                      <option>ESP32</option><option>STM32</option><option>op-amp</option>
+                      <option>LDO</option><option>buck</option><option>boost</option>
+                    </datalist>
+                  </div>
+                  {# Pinout IC #}
+                  <div class="col-12">
+                    <div class="pinout-widget d-flex gap-3 align-items-start"
+                         style="border:1px solid #dee2e6; border-radius:4px; padding:0.75rem;">
+                      <div class="flex-grow-1">
+                        <label class="form-label fw-semibold mb-1">Pinout / Diagrama</label>
+                        <div class="input-group input-group-sm">
+                          <span class="input-group-text"><i class="bi bi-diagram-3"></i></span>
+                          <input type="text" name="pinout_url" class="form-control pinout-url-input"
+                                 value="{{ component.pinout_url if component else '' }}"
+                                 placeholder="URL o archivo local">
+                          <button type="button" class="btn btn-outline-secondary pinout-upload-btn"
+                                  title="Subir imagen"><i class="bi bi-upload"></i></button>
+                          <button type="button" class="btn btn-outline-secondary pinout-browse-btn"
+                                  data-bs-toggle="modal" data-bs-target="#modalImagenes"
+                                  title="Explorar static/"><i class="bi bi-folder2-open"></i></button>
+                        </div>
+                        <input type="file" accept="image/*" class="pinout-file-input" style="display:none">
+                      </div>
+                      <div style="width:200px; flex-shrink:0;">
+                        <div class="pinout-placeholder rounded border"
+                             style="width:200px; height:140px; background:#f8f9fa;
+                                    display:{{ 'none' if (component and component.pinout_url) else 'flex' }};
+                                    align-items:center; justify-content:center;">
+                          <i class="bi bi-diagram-3 text-secondary" style="font-size:3rem;"></i>
+                        </div>
+                        <div class="pinout-preview-wrap"
+                             style="{{ '' if (component and component.pinout_url) else 'display:none;' }}">
+                          <img class="pinout-preview rounded border d-block img-lightbox"
+                               src="{{ component.pinout_url if (component and component.pinout_url) else '' }}"
+                               alt="Pinout"
+                               style="width:200px; height:140px; object-fit:contain; background:#f8f9fa;">
+                          <div class="pinout-error text-muted small mt-1" style="display:none;">
+                            <i class="bi bi-exclamation-triangle text-warning"></i> No se puede cargar
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>{# /row g-3 #}
+          </fieldset>
+        </div>
+
+        {# ── Notas ──────────────────────────────────────────────────────── #}
+        <div class="col-12 mt-2"><h6 class="text-muted text-uppercase small fw-bold border-bottom pb-1">Notas</h6></div>
+
+        <div class="col-12">
+          <div id="notes-editor"></div>
+          <textarea name="notes" style="display:none">{{ component.notes if component else '' }}</textarea>
+        </div>
+
+        <div class="col-12 d-flex gap-2 pt-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg"></i> {{ 'Guardar cambios' if component else 'Crear componente' }}
+          </button>
+          {% if component %}
+          <a href="{{ url_for('main.component_detail', id=component.id) }}" class="btn btn-outline-secondary">Cancelar</a>
+          {% else %}
+          <a href="{{ url_for('main.components_list') }}" class="btn btn-outline-secondary">Cancelar</a>
+          {% endif %}
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Modal explorador de imágenes ───────────────────────────────── #}
+<div class="modal fade" id="modalImagenes" tabindex="-1" aria-labelledby="modalImagenesLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalImagenesLabel">
+          <i class="bi bi-folder2-open me-2"></i>Imágenes en static/
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div id="img-grid" class="row g-2">
+          <div class="col-12 text-center text-muted py-4" id="img-grid-loading">
+            <div class="spinner-border spinner-border-sm me-2"></div>Cargando…
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Modal mapa estantería ───────────────────────────────────────── #}
+<div class="modal fade" id="modalEstanteria" tabindex="-1" aria-labelledby="modalEstanteriaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalEstanteriaLabel">
+          <i class="bi bi-grid-3x3-gap me-2"></i>Mapa de la estantería
+          <small class="text-muted fw-normal ms-2">— pulsa una celda para seleccionarla</small>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-2">
+        <div id="estanteria-map" style="position:relative; display:inline-block; width:100%;">
+          <img src="{{ url_for('static', filename='estanteria.jpg') }}"
+               alt="Mapa de la estantería" class="img-fluid rounded d-block" id="estanteria-img">
+          {#
+            Grid de 8 filas × 3 cols (total = 6fr):
+              Fila 0 (1fr)     : cabecera imagen (A B C) — no clicable
+              Fila 1 (1fr)     : estante 1
+              Fila 2 (0.5fr)   : estante 2
+              Fila 3 (0.5fr)   : estante 3
+              Fila 4 (0.625fr) : estante 4 ← mitad superior de la antigua fila 4
+              Fila 5 (0.625fr) : estante 5 ← mitad inferior de la antigua fila 4
+              Fila 6 (1fr)     : estante 6 ← antigua fila 5
+              Fila 7 (0.75fr)  : base/zócalo — no clicable
+          #}
+          <div id="estanteria-grid" style="position:absolute;top:0;left:0;width:100%;height:100%;display:grid;
+               grid-template-columns:repeat(3,1fr);
+               grid-template-rows:1fr 1fr 0.5fr 0.5fr 0.625fr 0.625fr 1fr 0.75fr;">
+            {# Cabecera no clicable #}
+            {% for _ in ['A','B','C'] %}
+            <div style="border:1px solid rgba(255,255,255,0.05);"></div>
+            {% endfor %}
+            {# Estantes 1–6 #}
+            {% for fila in range(1,7) %}
+              {% for col in ['A','B','C'] %}
+              <div class="estanteria-celda"
+                   data-valor="{{ col }}{{ fila }}"
+                   title="{{ col }}{{ fila }}"
+                   style="cursor:pointer;border:1px solid rgba(255,255,255,0.15);
+                          display:flex;align-items:center;justify-content:center;
+                          font-size:0.7rem;font-weight:bold;color:rgba(255,255,255,0);
+                          transition:background .15s,color .15s;">
+                {{ col }}{{ fila }}
+              </div>
+              {% endfor %}
+            {% endfor %}
+            {# Base/zócalo no clicable #}
+            {% for _ in ['A','B','C'] %}
+            <div style="border:1px solid rgba(255,255,255,0.05);"></div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+#description-editor,
+#notes-editor {
+  height: auto !important;
+}
+#description-editor .ql-editor {
+  min-height: 90px;
+  max-height: 90px;
+  overflow-y: auto;
+}
+#notes-editor .ql-editor {
+  min-height: 120px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.estanteria-celda:hover {
+  background: rgba(13,110,253,0.35) !important;
+  color: #fff !important;
+  border-color: rgba(13,110,253,0.8) !important;
+}
+.estanteria-celda.seleccionada {
+  background: rgba(13,110,253,0.55) !important;
+  color: #fff !important;
+  border-color: #0d6efd !important;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+<script>
+(function () {
+  const sel = document.getElementById('category_id');
+  const TIPO_SECTIONS = {
+    'resistencia':      'sect-resistencia',
+    'condensador':      'sect-condensador',
+    'inductor':         'sect-inductor',
+    'ic':               'sect-ic',
+    'microcontrolador': 'sect-microcontrolador',
+  };
+
+  function update() {
+    const tipo = sel.options[sel.selectedIndex]?.dataset.tipo || '';
+    Object.entries(TIPO_SECTIONS).forEach(([t, sectId]) => {
+      document.getElementById(sectId)?.classList.toggle('d-none', tipo !== t);
+    });
+  }
+
+  sel.addEventListener('change', update);
+  update();  // ejecutar al cargar (modo edición)
+})();
+
+// ── Preview + subida + explorador de imagen ─────────────────────────
+(function () {
+  const urlInput   = document.getElementById('image_url_input');
+  const wrap       = document.getElementById('image_preview_wrap');
+  const img        = document.getElementById('image_preview');
+  const errMsg     = document.getElementById('image_preview_error');
+  const placeholder= document.getElementById('image_placeholder');
+  const fileInput  = document.getElementById('file-img-input');
+  const btnUpload  = document.getElementById('btn-img-upload');
+  const modalImg   = document.getElementById('modalImagenes');
+
+  // -- Preview ---------------------------------------------------------
+  function setUrl(url) {
+    urlInput.value = url;
+    updatePreview(url);
+  }
+
+  function updatePreview(url) {
+    url = (url || '').trim();
+    if (!url) {
+      wrap.style.display = 'none';
+      placeholder.style.display = '';
+      return;
+    }
+    errMsg.style.display = 'none';
+    img.style.display = 'block';
+    img.src = url;
+    wrap.style.display = '';
+    placeholder.style.display = 'none';
+  }
+
+  img.addEventListener('error', () => {
+    errMsg.style.display = '';
+    img.style.display = 'none';
+    placeholder.style.display = 'none'; // el mensaje de error ya informa
+  });
+  img.addEventListener('load', () => {
+    errMsg.style.display = 'none';
+    img.style.display = 'block';
+    placeholder.style.display = 'none';
+  });
+
+  urlInput.addEventListener('input', function () { updatePreview(this.value); });
+  updatePreview(urlInput.value);
+
+  // -- Subida de imagen local ------------------------------------------
+  btnUpload.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    btnUpload.disabled = true;
+    btnUpload.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    fetch('{{ url_for("main.image_upload") }}', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(data => {
+        if (data.url) setUrl(data.url);
+        else alert('Error: ' + (data.error || 'desconocido'));
+      })
+      .catch(() => alert('Error al subir la imagen'))
+      .finally(() => {
+        btnUpload.disabled = false;
+        btnUpload.innerHTML = '<i class="bi bi-upload"></i>';
+        fileInput.value = '';
+      });
+  });
+
+  // El botón "Explorar" de la imagen principal apunta el callback a setUrl
+  document.querySelector('[data-bs-target="#modalImagenes"]')
+    ?.addEventListener('click', () => { window._imgSelectCallback = setUrl; });
+
+  // -- Explorador de imágenes ------------------------------------------
+  modalImg.addEventListener('show.bs.modal', function () {
+    // Si nadie asignó callback (p.ej. abrir modal programáticamente), usar setUrl
+    if (!window._imgSelectCallback) window._imgSelectCallback = setUrl;
+
+    const grid    = document.getElementById('img-grid');
+    const loading = document.getElementById('img-grid-loading');
+    grid.innerHTML = '';
+    loading.style.display = '';
+    grid.appendChild(loading);
+
+    fetch('{{ url_for("main.images_list") }}')
+      .then(r => r.json())
+      .then(images => {
+        grid.innerHTML = '';
+        if (!images.length) {
+          grid.innerHTML = '<div class="col-12 text-center text-muted py-4">No hay imágenes en static/</div>';
+          return;
+        }
+        images.forEach(im => {
+          const col = document.createElement('div');
+          col.className = 'col-6 col-sm-4 col-md-3';
+          col.innerHTML = `
+            <div class="card h-100 img-card" style="cursor:pointer;" data-url="${im.url}" title="${im.rel}">
+              <img src="${im.url}" class="card-img-top"
+                   style="height:90px;object-fit:contain;background:#f8f9fa;padding:4px;">
+              <div class="card-footer p-1 text-center small text-truncate">${im.name}</div>
+            </div>`;
+          col.querySelector('.img-card').addEventListener('click', function () {
+            (window._imgSelectCallback || setUrl)(this.dataset.url);
+            window._imgSelectCallback = null;
+            bootstrap.Modal.getInstance(modalImg).hide();
+          });
+          grid.appendChild(col);
+        });
+      })
+      .catch(() => {
+        grid.innerHTML = '<div class="col-12 text-center text-danger py-4">Error al cargar las imágenes</div>';
+      });
+  });
+})();
+
+// ── Widgets Pinout (uno por sección, activado por clases) ───────────
+(function () {
+  document.querySelectorAll('.pinout-url-input').forEach(function (urlInput) {
+    // Encontrar los elementos hermanos dentro del mismo col-* contenedor
+    const container   = urlInput.closest('.pinout-widget');
+    const fileInput   = container.querySelector('.pinout-file-input');
+    const uploadBtn   = container.querySelector('.pinout-upload-btn');
+    const browseBtn   = container.querySelector('.pinout-browse-btn');
+    const placeholder = container.querySelector('.pinout-placeholder');
+    const previewWrap = container.querySelector('.pinout-preview-wrap');
+    const previewImg  = container.querySelector('.pinout-preview');
+    const errorMsg    = container.querySelector('.pinout-error');
+
+    function updatePreview(url) {
+      url = (url || '').trim();
+      if (!url) {
+        previewWrap.style.display = 'none';
+        placeholder.style.display = 'flex';
+        return;
+      }
+      errorMsg.style.display = 'none';
+      previewImg.style.display = 'block';
+      previewImg.src = url;
+      previewWrap.style.display = '';
+      placeholder.style.display = 'none';
+    }
+
+    previewImg.addEventListener('error', () => {
+      errorMsg.style.display = '';
+      previewImg.style.display = 'none';
+    });
+    previewImg.addEventListener('load', () => {
+      errorMsg.style.display = 'none';
+      previewImg.style.display = 'block';
+    });
+
+    urlInput.addEventListener('input', function () { updatePreview(this.value); });
+    updatePreview(urlInput.value);
+
+    // Subida de archivo
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', function () {
+      const file = this.files[0];
+      if (!file) return;
+      const fd = new FormData();
+      fd.append('file', file);
+      uploadBtn.disabled = true;
+      uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+      fetch('{{ url_for("main.image_upload") }}', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+          if (data.url) { urlInput.value = data.url; updatePreview(data.url); }
+          else alert('Error: ' + (data.error || 'desconocido'));
+        })
+        .catch(() => alert('Error al subir la imagen'))
+        .finally(() => {
+          uploadBtn.disabled = false;
+          uploadBtn.innerHTML = '<i class="bi bi-upload"></i>';
+          fileInput.value = '';
+        });
+    });
+
+    // Al pulsar "Explorar", asignar el callback al input de este pinout
+    browseBtn.addEventListener('click', () => {
+      window._imgSelectCallback = function (url) {
+        urlInput.value = url;
+        updatePreview(url);
+      };
+    });
+  });
+})();
+
+// ── Quill rich text editors ─────────────────────────────────────────
+(function () {
+  const toolbarOptions = [
+    ['bold', 'italic', 'underline'],
+    ['link'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['clean']
+  ];
+
+  const descEditor = new Quill('#description-editor', {
+    theme: 'snow',
+    placeholder: 'Breve descripción del componente',
+    modules: { toolbar: toolbarOptions }
+  });
+  const descTextarea = document.querySelector('textarea[name="description"]');
+  if (descTextarea.value) descEditor.root.innerHTML = descTextarea.value;
+
+  const notesEditor = new Quill('#notes-editor', {
+    theme: 'snow',
+    placeholder: 'Notas adicionales, advertencias...',
+    modules: { toolbar: toolbarOptions }
+  });
+  const notesTextarea = document.querySelector('textarea[name="notes"]');
+  if (notesTextarea.value) notesEditor.root.innerHTML = notesTextarea.value;
+
+  document.querySelector('form').addEventListener('submit', function () {
+    descTextarea.value  = descEditor.root.innerHTML;
+    notesTextarea.value = notesEditor.root.innerHTML;
+  });
+})();
+
+// ── Mapa interactivo de estantería ──────────────────────────────────
+(function () {
+  const modal    = document.getElementById('modalEstanteria');
+  const input    = document.querySelector('input[name="estanteria"]');
+  const celdas   = document.querySelectorAll('.estanteria-celda');
+
+  // Marcar celda activa al abrir el modal según valor actual del campo
+  modal.addEventListener('show.bs.modal', function () {
+    const actual = input.value.trim();
+    celdas.forEach(c => {
+      c.classList.toggle('seleccionada', c.dataset.valor === actual);
+    });
+  });
+
+  celdas.forEach(celda => {
+    celda.addEventListener('click', function () {
+      input.value = this.dataset.valor;
+      celdas.forEach(c => c.classList.remove('seleccionada'));
+      this.classList.add('seleccionada');
+      // Cerrar modal tras breve pausa visual
+      setTimeout(() => bootstrap.Modal.getInstance(modal).hide(), 200);
+    });
+  });
+})();
+</script>
+{% endblock %}

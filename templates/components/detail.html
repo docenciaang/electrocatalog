@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% block title %}{{ component.name }} — ElectroCatalog{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('main.components_list') }}">Componentes</a></li>
+    <li class="breadcrumb-item active">{{ component.name }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <h2 class="mb-1">{{ component.name }}</h2>
+    <span class="badge bg-secondary fs-6">{{ component.category.name }}</span>
+    {% if component.valor_display %}
+    <span class="badge bg-dark fs-6 ms-1">{{ component.valor_display }}</span>
+    {% endif %}
+    {% if component.encapsulado %}
+    <span class="badge bg-light text-dark border fs-6 ms-1">{{ component.encapsulado }}</span>
+    {% endif %}
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('main.component_edit', id=component.id) }}" class="btn btn-outline-secondary">
+      <i class="bi bi-pencil"></i> Editar
+    </a>
+    <a href="{{ url_for('main.component_delete', id=component.id) }}" class="btn btn-outline-danger">
+      <i class="bi bi-trash"></i> Eliminar
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  {# ── Columna principal ─────────────────────────────────────────────────── #}
+  <div class="col-md-8">
+
+    {# Identificación #}
+    <div class="card mb-3">
+      <div class="card-header text-muted small fw-bold text-uppercase">Identificación</div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-4">Descripción</dt>
+          <dd class="col-sm-8">{% if component.description %}{{ component.description | safe }}{% else %}—{% endif %}</dd>
+
+          <dt class="col-sm-4">Categoría</dt>
+          <dd class="col-sm-8">
+            <a href="{{ url_for('main.components_list', category_id=component.category_id) }}">
+              {{ component.category.name }}
+            </a>
+          </dd>
+
+          <dt class="col-sm-4">Estantería</dt>
+          <dd class="col-sm-8">{{ component.estanteria or '—' }}</dd>
+
+          <dt class="col-sm-4">Caja</dt>
+          <dd class="col-sm-8">{{ component.caja or '—' }}</dd>
+
+          <dt class="col-sm-4">Datasheet</dt>
+          <dd class="col-sm-8">
+            {% if component.datasheet_url %}
+            <a href="{{ component.datasheet_url }}" target="_blank" rel="noopener noreferrer">
+              <i class="bi bi-file-earmark-pdf text-danger"></i> Ver datasheet
+            </a>
+            {% else %}—{% endif %}
+          </dd>
+
+          {% if component.notes %}
+          <dt class="col-sm-4">Notas</dt>
+          <dd class="col-sm-8">{{ component.notes | safe }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+    </div>
+
+    {# Parámetros técnicos comunes #}
+    {% set has_tech = component.encapsulado or component.tolerancia is not none
+                      or component.potencia_w is not none or component.voltaje_max_v is not none
+                      or component.temp_op_min is not none or component.temp_op_max is not none %}
+    {% if has_tech %}
+    <div class="card mb-3">
+      <div class="card-header text-muted small fw-bold text-uppercase">Parámetros técnicos</div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          {% if component.encapsulado %}
+          <dt class="col-sm-4">Encapsulado</dt>
+          <dd class="col-sm-8"><span class="badge bg-light text-dark border">{{ component.encapsulado }}</span></dd>
+          {% endif %}
+
+          {% if component.tolerancia is not none %}
+          <dt class="col-sm-4">Tolerancia</dt>
+          <dd class="col-sm-8">± {{ component.tolerancia | string | replace('.0','') }} %</dd>
+          {% endif %}
+
+          {% if component.potencia_w is not none %}
+          <dt class="col-sm-4">Potencia máx.</dt>
+          <dd class="col-sm-8">{{ '%g' % component.potencia_w }} W</dd>
+          {% endif %}
+
+          {% if component.voltaje_max_v is not none %}
+          <dt class="col-sm-4">Voltaje máx.</dt>
+          <dd class="col-sm-8">{{ '%g' % component.voltaje_max_v }} V</dd>
+          {% endif %}
+
+        </dl>
+      </div>
+    </div>
+    {% endif %}
+
+    {# Parámetros específicos #}
+    {% set has_specific = component.valor_ohm is not none
+                          or component.capacitancia_uf is not none
+                          or component.inductancia_uh is not none
+                          or component.familia_ic or component.pinout_url
+                          or component.flash_kb is not none
+                          or component.ram_kb is not none
+                          or component.rom_kb is not none
+                          or component.voltaje_op_v is not none
+                          or component.frecuencia_mhz is not none
+                          or component.wifi or component.bt
+                          or component.zigbee or component.lora %}
+    {% if has_specific %}
+    <div class="card mb-3">
+      <div class="card-header text-muted small fw-bold text-uppercase">Parámetros específicos</div>
+      <div class="card-body">
+        <dl class="row mb-0">
+
+          {% if component.category.tipo == 'resistencia' and component.valor_ohm is not none %}
+          <dt class="col-sm-4">Resistencia</dt>
+          <dd class="col-sm-8 fw-bold fs-5">{{ component.valor_display }}</dd>
+          {% endif %}
+
+          {% if component.category.tipo == 'condensador' and component.capacitancia_uf is not none %}
+          <dt class="col-sm-4">Capacitancia</dt>
+          <dd class="col-sm-8 fw-bold fs-5">{{ component.valor_display }}</dd>
+          {% endif %}
+
+          {% if component.category.tipo == 'inductor' and component.inductancia_uh is not none %}
+          <dt class="col-sm-4">Inductancia</dt>
+          <dd class="col-sm-8 fw-bold fs-5">{{ component.valor_display }}</dd>
+          {% endif %}
+
+          {% if component.category.tipo == 'microcontrolador' %}
+            {% if component.flash_kb is not none %}
+            <dt class="col-sm-4">Flash</dt>
+            <dd class="col-sm-8">{{ '%g' % component.flash_kb }} KB</dd>
+            {% endif %}
+            {% if component.ram_kb is not none %}
+            <dt class="col-sm-4">RAM</dt>
+            <dd class="col-sm-8">{{ '%g' % component.ram_kb }} KB</dd>
+            {% endif %}
+            {% if component.rom_kb is not none %}
+            <dt class="col-sm-4">ROM / EEPROM</dt>
+            <dd class="col-sm-8">{{ '%g' % component.rom_kb }} KB</dd>
+            {% endif %}
+            {% if component.voltaje_op_v is not none %}
+            <dt class="col-sm-4">Voltaje operación</dt>
+            <dd class="col-sm-8">{{ '%g' % component.voltaje_op_v }} V</dd>
+            {% endif %}
+            {% if component.frecuencia_mhz is not none %}
+            <dt class="col-sm-4">Frecuencia</dt>
+            <dd class="col-sm-8">{{ '%g' % component.frecuencia_mhz }} MHz</dd>
+            {% endif %}
+            {% set conectividad = [] %}
+            {% if component.wifi    %}{% set _ = conectividad.append('WiFi')      %}{% endif %}
+            {% if component.bt      %}{% set _ = conectividad.append('Bluetooth') %}{% endif %}
+            {% if component.zigbee  %}{% set _ = conectividad.append('Zigbee')    %}{% endif %}
+            {% if component.lora    %}{% set _ = conectividad.append('LoRa')      %}{% endif %}
+            {% if conectividad %}
+            <dt class="col-sm-4">Conectividad</dt>
+            <dd class="col-sm-8">
+              {% for c in conectividad %}
+              <span class="badge bg-primary me-1">{{ c }}</span>
+              {% endfor %}
+            </dd>
+            {% endif %}
+          {% endif %}
+
+          {% if component.familia_ic %}
+          <dt class="col-sm-4">Familia / Arquitectura</dt>
+          <dd class="col-sm-8">{{ component.familia_ic }}</dd>
+          {% endif %}
+
+          {% if component.pinout_url %}
+          <dt class="col-sm-4">Pinout</dt>
+          <dd class="col-sm-8">
+            <img src="{{ component.pinout_url }}" alt="Pinout {{ component.name }}"
+                 class="img-fluid rounded img-lightbox"
+                 style="max-height:180px; object-fit:contain; cursor:zoom-in;">
+          </dd>
+          {% endif %}
+
+        </dl>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  {# ── Columna lateral: imagen + stock + fechas ──────────────────────────── #}
+  <div class="col-md-4">
+    {% if component.image_url %}
+    <div class="card mb-3">
+      <img src="{{ component.image_url }}" alt="{{ component.name }}"
+           class="card-img-top img-lightbox"
+           style="object-fit:contain; max-height:220px; background:#f8f9fa;">
+    </div>
+    {% endif %}
+    <div class="card text-center">
+      <div class="card-body py-4">
+        <div class="text-muted mb-1">Stock</div>
+        <div class="display-3 fw-bold {{ 'stock-ok' if component.quantity > 0 else 'stock-zero' }}">
+          {{ component.quantity }}
+        </div>
+        <div class="text-muted small mb-3">unidades</div>
+        <form method="POST" action="{{ url_for('main.component_stock', id=component.id) }}"
+              class="d-flex justify-content-center gap-2">
+          <button name="action" value="dec" class="btn btn-outline-secondary"
+                  {% if component.quantity == 0 %}disabled{% endif %}>
+            <i class="bi bi-dash-lg"></i>
+          </button>
+          <button name="action" value="inc" class="btn btn-outline-success">
+            <i class="bi bi-plus-lg"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card mt-3">
+      <div class="card-body">
+        <small class="text-muted">
+          <i class="bi bi-calendar-plus me-1"></i>
+          Añadido: {{ component.created_at.strftime('%d/%m/%Y %H:%M') }}<br>
+          <i class="bi bi-calendar-check me-1"></i>
+          Actualizado: {{ component.updated_at.strftime('%d/%m/%Y %H:%M') if component.updated_at else '—' }}
+        </small>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

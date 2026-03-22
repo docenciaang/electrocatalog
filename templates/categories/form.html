@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Editar' if category else 'Nueva' }} categoría — ElectroCatalog{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('main.categories_list') }}">Categorías</a></li>
+    <li class="breadcrumb-item active">{{ 'Editar' if category else 'Nueva' }}</li>
+  </ol>
+</nav>
+
+<h2 class="mb-4">
+  <i class="bi bi-{{ 'pencil' if category else 'plus-circle' }} me-2"></i>
+  {{ 'Editar categoría' if category else 'Nueva categoría' }}
+</h2>
+
+<div class="card" style="max-width:500px">
+  <div class="card-body">
+    <form method="POST" action="{{ action }}">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+        <input type="text" name="name" class="form-control"
+               value="{{ category.name if category else '' }}" required autofocus>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Descripción</label>
+        <input type="text" name="description" class="form-control"
+               value="{{ category.description if category else '' }}"
+               placeholder="Descripción breve (opcional)">
+      </div>
+      <div class="mb-4">
+        <label class="form-label fw-semibold">Tipo de atributos específicos</label>
+        <select name="tipo" class="form-select">
+          <option value="" {% if not category or not category.tipo %}selected{% endif %}>
+            Genérico (sin atributos específicos)
+          </option>
+          <option value="resistencia" {% if category and category.tipo == 'resistencia' %}selected{% endif %}>
+            Resistencia — valor en Ω
+          </option>
+          <option value="condensador" {% if category and category.tipo == 'condensador' %}selected{% endif %}>
+            Condensador — capacitancia en µF
+          </option>
+          <option value="inductor" {% if category and category.tipo == 'inductor' %}selected{% endif %}>
+            Inductor — inductancia en µH
+          </option>
+          <option value="ic" {% if category and category.tipo == 'ic' %}selected{% endif %}>
+            Circuito Integrado — familia + pinout
+          </option>
+          <option value="microcontrolador" {% if category and category.tipo == 'microcontrolador' %}selected{% endif %}>
+            Microcontrolador — flash, RAM, ROM, voltaje, familia + pinout
+          </option>
+        </select>
+        <div class="form-text">Determina qué campos específicos aparecen al crear componentes de esta categoría.</div>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-lg"></i> {{ 'Guardar cambios' if category else 'Crear categoría' }}
+        </button>
+        <a href="{{ url_for('main.categories_list') }}" class="btn btn-outline-secondary">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

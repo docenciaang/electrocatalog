@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar {{ category.name }} — ElectroCatalog{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card border-danger">
+      <div class="card-header bg-danger text-white">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> Confirmar eliminación
+      </div>
+      <div class="card-body">
+        {% set count = category.component_count() %}
+        <p>¿Estás seguro de que quieres eliminar la categoría:</p>
+        <p class="fw-bold fs-5">{{ category.name }}</p>
+
+        {% if count > 0 %}
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle"></i>
+          Esta categoría tiene <strong>{{ count }} componente(s)</strong> asociado(s).
+          Debes reasignarlos o eliminarlos antes de borrar la categoría.
+        </div>
+        <a href="{{ url_for('main.components_list', category_id=category.id) }}"
+           class="btn btn-outline-warning">
+          Ver componentes
+        </a>
+        <a href="{{ url_for('main.categories_list') }}" class="btn btn-outline-secondary ms-2">
+          Volver
+        </a>
+        {% else %}
+        <p class="text-danger"><i class="bi bi-exclamation-circle"></i> Esta acción no se puede deshacer.</p>
+        <div class="d-flex gap-2 mt-3">
+          <form method="POST">
+            <button type="submit" class="btn btn-danger">
+              <i class="bi bi-trash"></i> Sí, eliminar
+            </button>
+          </form>
+          <a href="{{ url_for('main.categories_list') }}" class="btn btn-outline-secondary">
+            Cancelar
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

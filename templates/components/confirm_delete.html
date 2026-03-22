@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar {{ component.name }} — ElectroCatalog{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card border-danger">
+      <div class="card-header bg-danger text-white">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> Confirmar eliminación
+      </div>
+      <div class="card-body">
+        <p>¿Estás seguro de que quieres eliminar el componente:</p>
+        <p class="fw-bold fs-5">{{ component.name }}</p>
+        <p class="text-muted">
+          Categoría: <span class="badge bg-secondary">{{ component.category.name }}</span>
+          &nbsp; Stock: <strong>{{ component.quantity }}</strong>
+        </p>
+        <p class="text-danger"><i class="bi bi-exclamation-circle"></i> Esta acción no se puede deshacer.</p>
+
+        <div class="d-flex gap-2 mt-3">
+          <form method="POST">
+            <button type="submit" class="btn btn-danger">
+              <i class="bi bi-trash"></i> Sí, eliminar
+            </button>
+          </form>
+          <a href="{{ url_for('main.component_detail', id=component.id) }}"
+             class="btn btn-outline-secondary">
+            Cancelar
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

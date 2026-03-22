@@ -296,3 +296,29 @@ def category_delete(id):
         flash(f'Categoría «{name}» eliminada.', 'warning')
         return redirect(url_for('main.categories_list'))
     return render_template('categories/confirm_delete.html', category=category)
+
+
+# ── Enriquecimiento con LLM ───────────────────────────────────────────────────
+
+@main.route('/components/<int:id>/enrich', methods=['POST'])
+def component_enrich(id):
+    import traceback
+    from pydantic import ValidationError
+    from services.llm_enrichment_service import enrich_component, get_provider
+
+    component = db.get_or_404(Component, id)
+    data          = request.get_json(silent=True) or {}
+    provider_name = data.get('provider')
+
+    try:
+        fields = enrich_component(component, provider_name)
+        return jsonify(fields=fields)
+    except KeyError as e:
+        return jsonify(error=f'API key no configurada: {e}'), 503
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+    except ValidationError as e:
+        return jsonify(error='Respuesta del LLM inválida', detail=e.errors()), 422
+    except Exception:
+        traceback.print_exc()
+        return jsonify(error='Error interno al contactar el LLM'), 500

@@ -15,10 +15,18 @@
   </ol>
 </nav>
 
-<h2 class="mb-4">
-  <i class="bi bi-{{ 'pencil' if component else 'plus-circle' }} me-2"></i>
-  {{ 'Editar componente' if component else 'Nuevo componente' }}
-</h2>
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h2 class="mb-0">
+    <i class="bi bi-{{ 'pencil' if component else 'plus-circle' }} me-2"></i>
+    {{ 'Editar componente' if component else 'Nuevo componente' }}
+  </h2>
+  {% if component %}
+  <button type="button" id="btn-enrich" class="btn btn-outline-primary">
+    <i class="bi bi-stars me-1"></i> Completar con IA
+    <span id="enrich-spinner" class="spinner-border spinner-border-sm d-none ms-1"></span>
+  </button>
+  {% endif %}
+</div>
 
 <div class="card">
   <div class="card-body">
@@ -768,5 +776,99 @@
     });
   });
 })();
+
+// ── Completar con IA ─────────────────────────────────────────────────
+{% if component %}
+(function () {
+  const btn     = document.getElementById('btn-enrich');
+  const spinner = document.getElementById('enrich-spinner');
+  if (!btn) return;
+
+  // Mapa campo → elemento de formulario (o función setter para Quill)
+  const FIELD_SETTERS = {
+    description:    (v) => { descEditor.root.innerHTML = v; descTextarea.value = v; },
+    notes:          (v) => { notesEditor.root.innerHTML = v; notesTextarea.value = v; },
+    encapsulado:    (v) => setField('input[name="encapsulado"]', v),
+    tolerancia:     (v) => setField('input[name="tolerancia"]', v),
+    potencia_w:     (v) => setField('input[name="potencia_w"]', v),
+    voltaje_max_v:  (v) => setField('input[name="voltaje_max_v"]', v),
+    voltaje_op_v:   (v) => setField('input[name="voltaje_op_v"]', v),
+    frecuencia_mhz: (v) => setField('input[name="frecuencia_mhz"]', v),
+    flash_kb:       (v) => setField('input[name="flash_kb"]', v),
+    ram_kb:         (v) => setField('input[name="ram_kb"]', v),
+    rom_kb:         (v) => setField('input[name="rom_kb"]', v),
+    valor_ohm:      (v) => setField('input[name="valor_ohm"]', v),
+    capacitancia_uf:(v) => setField('input[name="capacitancia_uf"]', v),
+    inductancia_uh: (v) => setField('input[name="inductancia_uh"]', v),
+    familia_ic:     (v) => setField('input[name="familia_ic"]', v),
+    wifi:           (v) => setCheckbox('input[name="wifi"]', v),
+    bt:             (v) => setCheckbox('input[name="bt"]', v),
+    zigbee:         (v) => setCheckbox('input[name="zigbee"]', v),
+    lora:           (v) => setCheckbox('input[name="lora"]', v),
+  };
+
+  function setField(selector, value) {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    el.value = value;
+    el.style.background = '#fffbe6';
+  }
+
+  function setCheckbox(selector, value) {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    el.checked = !!value;
+    el.closest('.form-check')?.style && (el.closest('.form-check').style.background = '#fffbe6');
+  }
+
+  function showToast(msg, type = 'danger') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} alert-dismissible position-fixed bottom-0 end-0 m-3`;
+    toast.style.zIndex = 9999;
+    toast.innerHTML = `${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+  }
+
+  btn.addEventListener('click', async function () {
+    btn.disabled = true;
+    spinner.classList.remove('d-none');
+
+    try {
+      const resp = await fetch('{{ url_for("main.component_enrich", id=component.id) }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        showToast(`Error: ${data.error || resp.statusText}`);
+        return;
+      }
+
+      const fields = data.fields || {};
+      let count = 0;
+      for (const [key, value] of Object.entries(fields)) {
+        if (FIELD_SETTERS[key]) {
+          FIELD_SETTERS[key](value);
+          count++;
+        }
+      }
+
+      if (count === 0) {
+        showToast('El componente ya tiene todos los campos completados.', 'info');
+      } else {
+        showToast(`${count} campo(s) completados. Revisa los valores y guarda.`, 'success');
+      }
+    } catch (err) {
+      showToast(`Error de red: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      spinner.classList.add('d-none');
+    }
+  });
+})();
+{% endif %}
 </script>
 {% endblock %}

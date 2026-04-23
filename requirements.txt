@@ -1,2 +1,13 @@
 Flask>=3.0
 Flask-SQLAlchemy>=3.1
+
+# LLM providers
+anthropic>=0.25
+openai>=1.0
+requests>=2.31
+
+# Validación
+pydantic>=2.0
+
+# Configuración
+python-dotenv>=1.0

@@ -100,6 +100,64 @@ componentes/
         └── confirm_delete.html
 ```
 
+## Servidor MCP
+
+`mcp_server.py` expone el inventario como servidor [MCP](https://modelcontextprotocol.io/) para clientes como Claude Desktop.
+
+### Arranque
+
+```bash
+# Modo desarrollo — abre el inspector web en http://localhost:5173
+mcp dev mcp_server.py
+
+# Modo producción (stdio, para Claude Desktop)
+python mcp_server.py
+```
+
+### Recursos
+
+| URI | Descripción |
+|---|---|
+| `electrocatalog://categories` | Lista completa de categorías con conteo de componentes |
+| `electrocatalog://components` | Lista completa de componentes con todos sus campos |
+| `electrocatalog://component/{id}` | Detalle de un componente por ID |
+
+### Herramientas
+
+| Herramienta | Descripción |
+|---|---|
+| `list_categories` | Devuelve todas las categorías con su tipo y conteo |
+| `search_components(q, category_id)` | Búsqueda por texto libre y/o categoría |
+| `get_component(component_id)` | Detalle completo de un componente |
+| `create_component(name, category_id, …)` | Crea un componente con todos sus campos técnicos |
+| `update_stock(component_id, action)` | Incrementa (`inc`) o decrementa (`dec`) el stock en 1 |
+| `enrich_component(component_id, provider)` | Sugiere valores para campos vacíos usando un LLM (no modifica la BD) |
+
+### Prompts
+
+| Prompt | Descripción |
+|---|---|
+| `encontrar_componente(descripcion)` | Guía al LLM para buscar un componente por características técnicas |
+| `revisar_stock_bajo(umbral)` | Guía al LLM para identificar componentes con stock crítico |
+
+### Integración con Claude Desktop
+
+Añade esta entrada a tu `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "electrocatalog": {
+      "command": "python",
+      "args": ["C:/ruta/a/componentes/mcp_server.py"]
+    }
+  }
+}
+```
+
+> Si usas entorno virtual, sustituye `python` por la ruta al ejecutable dentro de `.venv`
+> (p. ej. `C:/ruta/a/componentes/.venv/Scripts/python.exe`).
+
 ## Notas
 
 - La base de datos SQLite se crea en `instance/components.db` y está excluida del repositorio (`.gitignore`).

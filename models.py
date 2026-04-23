@@ -60,6 +60,7 @@ class Component(db.Model):
     zigbee          = db.Column(db.Boolean, default=False)
     lora            = db.Column(db.Boolean, default=False)
     frecuencia_mhz  = db.Column(db.Float)       # Frecuencia CPU (MHz)
+    procesador      = db.Column(db.String(128))  # Microcontroladores — núcleo/procesador (ej: ESP32, STM32F4)
 
     @property
     def valor_display(self):

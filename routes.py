@@ -6,9 +6,13 @@ from models import db, Category, Component
 
 _IMG_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'}
 _IMG_SUBDIR     = 'img'   # subdirectorio dentro de static/
+_PDF_SUBDIR     = 'datasheets'
 
 def _is_image(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in _IMG_EXTENSIONS
+
+def _is_pdf(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'pdf'
 
 main = Blueprint('main', __name__)
 
@@ -29,15 +33,17 @@ _TIPO_CAMPOS = {
     'inductor':         ('inductancia_uh',),
     'ic':               ('familia_ic', 'pinout_url'),
     'microcontrolador': ('familia_ic', 'pinout_url', 'flash_kb', 'ram_kb', 'rom_kb',
-                         'voltaje_op_v', 'wifi', 'bt', 'zigbee', 'lora', 'frecuencia_mhz'),
+                         'voltaje_op_v', 'wifi', 'bt', 'zigbee', 'lora', 'frecuencia_mhz',
+                         'procesador'),
 }
 _ALL_SPECIFIC = frozenset({
     'valor_ohm', 'capacitancia_uf', 'inductancia_uh',
     'familia_ic', 'pinout_url',
     'flash_kb', 'ram_kb', 'rom_kb', 'voltaje_op_v',
     'wifi', 'bt', 'zigbee', 'lora', 'frecuencia_mhz',
+    'procesador',
 })
-_SPECIFIC_STR  = frozenset({'familia_ic', 'pinout_url'})
+_SPECIFIC_STR  = frozenset({'familia_ic', 'pinout_url', 'procesador'})
 _SPECIFIC_BOOL = frozenset({'wifi', 'bt', 'zigbee', 'lora'})
 
 
@@ -200,6 +206,18 @@ def component_stock(id):
 
 
 # ── Imágenes locales ──────────────────────────────────────────────────────────
+
+@main.route('/datasheets/upload', methods=['POST'])
+def datasheet_upload():
+    f = request.files.get('file')
+    if not f or not _is_pdf(f.filename):
+        return jsonify(error='Solo se permiten archivos PDF'), 400
+    filename = secure_filename(f.filename)
+    upload_dir = os.path.join(current_app.static_folder, _PDF_SUBDIR)
+    os.makedirs(upload_dir, exist_ok=True)
+    f.save(os.path.join(upload_dir, filename))
+    return jsonify(url=url_for('static', filename=f'{_PDF_SUBDIR}/{filename}'))
+
 
 @main.route('/images/upload', methods=['POST'])
 def image_upload():

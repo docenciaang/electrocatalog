@@ -161,6 +161,10 @@
             <dt class="col-sm-4">Frecuencia</dt>
             <dd class="col-sm-8">{{ '%g' % component.frecuencia_mhz }} MHz</dd>
             {% endif %}
+            {% if component.procesador %}
+            <dt class="col-sm-4">Procesador</dt>
+            <dd class="col-sm-8">{{ component.procesador }}</dd>
+            {% endif %}
             {% set conectividad = [] %}
             {% if component.wifi    %}{% set _ = conectividad.append('WiFi')      %}{% endif %}
             {% if component.bt      %}{% set _ = conectividad.append('Bluetooth') %}{% endif %}

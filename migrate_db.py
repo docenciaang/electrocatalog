@@ -33,6 +33,7 @@ COMPONENTS_COLUMNS = [
     ('ram_kb',         'REAL'),
     ('rom_kb',         'REAL'),
     ('voltaje_op_v',   'REAL'),
+    ('procesador',     'TEXT'),
 ]
 
 # ── Migración 2: campo tipo en categories + poblar valores ────────────────────

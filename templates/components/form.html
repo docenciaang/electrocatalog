@@ -128,13 +128,55 @@
           <label class="form-label fw-semibold">URL del Datasheet</label>
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-file-earmark-pdf text-danger"></i></span>
-            <input type="text" name="datasheet_url" class="form-control"
+            <input type="text" name="datasheet_url" id="datasheet_url_input" class="form-control"
                    value="{{ component.datasheet_url if component else '' }}"
-                   placeholder="https://...">
-            {% if component and component.datasheet_url %}
-            <a href="{{ component.datasheet_url }}" target="_blank" rel="noopener"
-               class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i></a>
-            {% endif %}
+                   placeholder="URL o archivo PDF local">
+            <button type="button" class="btn btn-outline-secondary" id="btn-datasheet-upload"
+                    title="Subir PDF local"><i class="bi bi-upload"></i></button>
+            <a id="datasheet-open-btn" href="{{ component.datasheet_url if (component and component.datasheet_url) else '#' }}"
+               target="_blank" rel="noopener"
+               class="btn btn-outline-secondary {{ 'd-none' if not (component and component.datasheet_url) else '' }}"
+               title="Abrir datasheet"><i class="bi bi-box-arrow-up-right"></i></a>
+          </div>
+          <input type="file" id="file-datasheet-input" accept=".pdf" style="display:none">
+        </div>
+
+        <div class="col-12">
+          <div class="pinout-widget d-flex gap-3 align-items-start"
+               style="border:1px solid #dee2e6; border-radius:4px; padding:0.75rem;">
+            <div class="flex-grow-1">
+              <label class="form-label fw-semibold mb-1">Pinout / Diagrama</label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="bi bi-diagram-3"></i></span>
+                <input type="text" name="pinout_url" class="form-control pinout-url-input"
+                       value="{{ component.pinout_url if component else '' }}"
+                       placeholder="URL o archivo local">
+                <button type="button" class="btn btn-outline-secondary pinout-upload-btn"
+                        title="Subir imagen"><i class="bi bi-upload"></i></button>
+                <button type="button" class="btn btn-outline-secondary pinout-browse-btn"
+                        data-bs-toggle="modal" data-bs-target="#modalImagenes"
+                        title="Explorar static/"><i class="bi bi-folder2-open"></i></button>
+              </div>
+              <input type="file" accept="image/*" class="pinout-file-input" style="display:none">
+            </div>
+            <div style="width:200px; flex-shrink:0;">
+              <div class="pinout-placeholder rounded border"
+                   style="width:200px; height:140px; background:#f8f9fa;
+                          display:{{ 'none' if (component and component.pinout_url) else 'flex' }};
+                          align-items:center; justify-content:center;">
+                <i class="bi bi-diagram-3 text-secondary" style="font-size:3rem;"></i>
+              </div>
+              <div class="pinout-preview-wrap"
+                   style="{{ '' if (component and component.pinout_url) else 'display:none;' }}">
+                <img class="pinout-preview rounded border d-block img-lightbox"
+                     src="{{ component.pinout_url if (component and component.pinout_url) else '' }}"
+                     alt="Pinout"
+                     style="width:200px; height:140px; object-fit:contain; background:#f8f9fa;">
+                <div class="pinout-error text-muted small mt-1" style="display:none;">
+                  <i class="bi bi-exclamation-triangle text-warning"></i> No se puede cargar
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -257,6 +299,12 @@
                            value="{{ component.frecuencia_mhz if component else '' }}"
                            placeholder="ej: 240">
                   </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold">Procesador</label>
+                    <input type="text" name="procesador" class="form-control"
+                           value="{{ component.procesador if component else '' }}"
+                           placeholder="ej: ESP32, STM32F411, ATmega328P">
+                  </div>
                   <div class="col-md-4">
                     <label class="form-label fw-semibold">Familia / Arquitectura</label>
                     <input type="text" name="familia_ic" class="form-control"
@@ -274,45 +322,6 @@
                         <label class="form-check-label" for="chk-{{ name }}">{{ label }}</label>
                       </div>
                       {% endfor %}
-                    </div>
-                  </div>
-                  {# Pinout microcontrolador #}
-                  <div class="col-12">
-                    <div class="pinout-widget d-flex gap-3 align-items-start"
-                         style="border:1px solid #dee2e6; border-radius:4px; padding:0.75rem;">
-                      <div class="flex-grow-1">
-                        <label class="form-label fw-semibold mb-1">Pinout / Diagrama</label>
-                        <div class="input-group input-group-sm">
-                          <span class="input-group-text"><i class="bi bi-diagram-3"></i></span>
-                          <input type="text" name="pinout_url" class="form-control pinout-url-input"
-                                 value="{{ component.pinout_url if component else '' }}"
-                                 placeholder="URL o archivo local">
-                          <button type="button" class="btn btn-outline-secondary pinout-upload-btn"
-                                  title="Subir imagen"><i class="bi bi-upload"></i></button>
-                          <button type="button" class="btn btn-outline-secondary pinout-browse-btn"
-                                  data-bs-toggle="modal" data-bs-target="#modalImagenes"
-                                  title="Explorar static/"><i class="bi bi-folder2-open"></i></button>
-                        </div>
-                        <input type="file" accept="image/*" class="pinout-file-input" style="display:none">
-                      </div>
-                      <div style="width:200px; flex-shrink:0;">
-                        <div class="pinout-placeholder rounded border"
-                             style="width:200px; height:140px; background:#f8f9fa;
-                                    display:{{ 'none' if (component and component.pinout_url) else 'flex' }};
-                                    align-items:center; justify-content:center;">
-                          <i class="bi bi-diagram-3 text-secondary" style="font-size:3rem;"></i>
-                        </div>
-                        <div class="pinout-preview-wrap"
-                             style="{{ '' if (component and component.pinout_url) else 'display:none;' }}">
-                          <img class="pinout-preview rounded border d-block img-lightbox"
-                               src="{{ component.pinout_url if (component and component.pinout_url) else '' }}"
-                               alt="Pinout"
-                               style="width:200px; height:140px; object-fit:contain; background:#f8f9fa;">
-                          <div class="pinout-error text-muted small mt-1" style="display:none;">
-                            <i class="bi bi-exclamation-triangle text-warning"></i> No se puede cargar
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -334,45 +343,6 @@
                       <option>ESP32</option><option>STM32</option><option>op-amp</option>
                       <option>LDO</option><option>buck</option><option>boost</option>
                     </datalist>
-                  </div>
-                  {# Pinout IC #}
-                  <div class="col-12">
-                    <div class="pinout-widget d-flex gap-3 align-items-start"
-                         style="border:1px solid #dee2e6; border-radius:4px; padding:0.75rem;">
-                      <div class="flex-grow-1">
-                        <label class="form-label fw-semibold mb-1">Pinout / Diagrama</label>
-                        <div class="input-group input-group-sm">
-                          <span class="input-group-text"><i class="bi bi-diagram-3"></i></span>
-                          <input type="text" name="pinout_url" class="form-control pinout-url-input"
-                                 value="{{ component.pinout_url if component else '' }}"
-                                 placeholder="URL o archivo local">
-                          <button type="button" class="btn btn-outline-secondary pinout-upload-btn"
-                                  title="Subir imagen"><i class="bi bi-upload"></i></button>
-                          <button type="button" class="btn btn-outline-secondary pinout-browse-btn"
-                                  data-bs-toggle="modal" data-bs-target="#modalImagenes"
-                                  title="Explorar static/"><i class="bi bi-folder2-open"></i></button>
-                        </div>
-                        <input type="file" accept="image/*" class="pinout-file-input" style="display:none">
-                      </div>
-                      <div style="width:200px; flex-shrink:0;">
-                        <div class="pinout-placeholder rounded border"
-                             style="width:200px; height:140px; background:#f8f9fa;
-                                    display:{{ 'none' if (component and component.pinout_url) else 'flex' }};
-                                    align-items:center; justify-content:center;">
-                          <i class="bi bi-diagram-3 text-secondary" style="font-size:3rem;"></i>
-                        </div>
-                        <div class="pinout-preview-wrap"
-                             style="{{ '' if (component and component.pinout_url) else 'display:none;' }}">
-                          <img class="pinout-preview rounded border d-block img-lightbox"
-                               src="{{ component.pinout_url if (component and component.pinout_url) else '' }}"
-                               alt="Pinout"
-                               style="width:200px; height:140px; object-fit:contain; background:#f8f9fa;">
-                          <div class="pinout-error text-muted small mt-1" style="display:none;">
-                            <i class="bi bi-exclamation-triangle text-warning"></i> No se puede cargar
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -649,6 +619,49 @@
   });
 })();
 
+// ── Datasheet upload ─────────────────────────────────────────────────
+(function () {
+  const urlInput  = document.getElementById('datasheet_url_input');
+  const fileInput = document.getElementById('file-datasheet-input');
+  const btnUpload = document.getElementById('btn-datasheet-upload');
+  const btnOpen   = document.getElementById('datasheet-open-btn');
+  if (!urlInput) return;
+
+  function updateOpenBtn(url) {
+    url = (url || '').trim();
+    if (url && url !== 'No encontrado') {
+      btnOpen.href = url;
+      btnOpen.classList.remove('d-none');
+    } else {
+      btnOpen.classList.add('d-none');
+    }
+  }
+
+  urlInput.addEventListener('input', function () { updateOpenBtn(this.value); });
+
+  btnUpload.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    btnUpload.disabled = true;
+    btnUpload.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    fetch('{{ url_for("main.datasheet_upload") }}', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(data => {
+        if (data.url) { urlInput.value = data.url; updateOpenBtn(data.url); }
+        else alert('Error: ' + (data.error || 'desconocido'));
+      })
+      .catch(() => alert('Error al subir el PDF'))
+      .finally(() => {
+        btnUpload.disabled = false;
+        btnUpload.innerHTML = '<i class="bi bi-upload"></i>';
+        fileInput.value = '';
+      });
+  });
+})();
+
 // ── Widgets Pinout (uno por sección, activado por clases) ───────────
 (function () {
   document.querySelectorAll('.pinout-url-input').forEach(function (urlInput) {
@@ -801,10 +814,18 @@
     capacitancia_uf:(v) => setField('input[name="capacitancia_uf"]', v),
     inductancia_uh: (v) => setField('input[name="inductancia_uh"]', v),
     familia_ic:     (v) => setField('input[name="familia_ic"]', v),
+    procesador:     (v) => setField('input[name="procesador"]', v),
     wifi:           (v) => setCheckbox('input[name="wifi"]', v),
     bt:             (v) => setCheckbox('input[name="bt"]', v),
     zigbee:         (v) => setCheckbox('input[name="zigbee"]', v),
     lora:           (v) => setCheckbox('input[name="lora"]', v),
+    datasheet_url:  (v) => {
+      setField('input[name="datasheet_url"]', v);
+      const btn = document.getElementById('datasheet-open-btn');
+      if (btn && v && v !== 'No encontrado') { btn.href = v; btn.classList.remove('d-none'); }
+    },
+    image_url:      (v) => setField('input[name="image_url"]', v),
+    pinout_url:     (v) => setField('input[name="pinout_url"]', v),
   };
 
   function setField(selector, value) {

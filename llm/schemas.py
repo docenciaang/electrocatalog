@@ -10,6 +10,9 @@ class ResistenciaEnrichment(BaseModel):
     potencia_w:    Optional[float] = Field(None, ge=0)
     voltaje_max_v: Optional[float] = Field(None, ge=0)
     description:   Optional[str]   = None
+    datasheet_url: Optional[str]   = None
+    image_url:     Optional[str]   = None
+    pinout_url:    Optional[str]   = None
 
 
 class CondensadorEnrichment(BaseModel):
@@ -18,6 +21,9 @@ class CondensadorEnrichment(BaseModel):
     tolerancia:      Optional[float] = Field(None, ge=0, le=100)
     voltaje_max_v:   Optional[float] = Field(None, ge=0)
     description:     Optional[str]   = None
+    datasheet_url:   Optional[str]   = None
+    image_url:       Optional[str]   = None
+    pinout_url:      Optional[str]   = None
 
 
 class InductorEnrichment(BaseModel):
@@ -26,6 +32,9 @@ class InductorEnrichment(BaseModel):
     tolerancia:     Optional[float] = Field(None, ge=0, le=100)
     potencia_w:     Optional[float] = Field(None, ge=0)
     description:    Optional[str]   = None
+    datasheet_url:  Optional[str]   = None
+    image_url:      Optional[str]   = None
+    pinout_url:     Optional[str]   = None
 
 
 class ICEnrichment(BaseModel):
@@ -34,6 +43,9 @@ class ICEnrichment(BaseModel):
     voltaje_max_v: Optional[float] = Field(None, ge=0)
     description:   Optional[str]   = None
     notes:         Optional[str]   = None
+    datasheet_url: Optional[str]   = None
+    image_url:     Optional[str]   = None
+    pinout_url:    Optional[str]   = None
 
 
 class MicrocontroladorEnrichment(BaseModel):
@@ -47,13 +59,20 @@ class MicrocontroladorEnrichment(BaseModel):
     zigbee:         Optional[bool]  = None
     lora:           Optional[bool]  = None
     familia_ic:     Optional[str]   = None
+    procesador:     Optional[str]   = None
     encapsulado:    Optional[str]   = None
     description:    Optional[str]   = None
+    datasheet_url:  Optional[str]   = None
+    image_url:      Optional[str]   = None
+    pinout_url:     Optional[str]   = None
 
 
 class GenericoEnrichment(BaseModel):
-    encapsulado: Optional[str] = None
-    description: Optional[str] = None
+    encapsulado:   Optional[str] = None
+    description:   Optional[str] = None
+    datasheet_url: Optional[str] = None
+    image_url:     Optional[str] = None
+    pinout_url:    Optional[str] = None
 
 
 _SCHEMA_BY_TIPO = {

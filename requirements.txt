@@ -11,3 +11,6 @@ pydantic>=2.0
 
 # Configuración
 python-dotenv>=1.0
+
+# Servidor MCP
+mcp[cli]>=1.0

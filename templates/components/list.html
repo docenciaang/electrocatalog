@@ -80,7 +80,7 @@
             {{ c.name }}
           </a>
           {% if c.description %}
-          <div class="text-muted small">{{ c.description[:60] }}{% if c.description|length > 60 %}…{% endif %}</div>
+          <div class="text-muted small">{{ c.description | striptags | truncate(60, True, '…') }}</div>
           {% endif %}
         </td>
         <td><span class="badge bg-secondary">{{ c.category.name }}</span></td>

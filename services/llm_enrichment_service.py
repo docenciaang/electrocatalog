@@ -1,6 +1,7 @@
 import os
 
 from llm.anthropic_provider import AnthropicProvider
+from llm.docker_provider import DockerModelProvider
 from llm.ollama_provider import OllamaProvider
 from llm.openai_provider import OpenAIProvider
 from llm.prompt_builder import build_prompt
@@ -11,6 +12,7 @@ _PROVIDERS = {
     "anthropic": AnthropicProvider,
     "openai":    OpenAIProvider,
     "ollama":    OllamaProvider,
+    "docker":    DockerModelProvider,
 }
 
 
@@ -58,5 +60,13 @@ def enrich_component(component, provider_name: str | None = None) -> dict:
     # Validar con Pydantic: descarta campos inesperados y valida rangos
     validated = schema(**{k: v for k, v in raw.items() if k in schema.model_fields})
 
-    # Devolver solo campos con valor (no null)
-    return {k: v for k, v in validated.model_dump().items() if v is not None}
+    _URL_FIELDS = {"datasheet_url", "image_url", "pinout_url"}
+
+    # Devolver solo campos con valor (no null); URLs sin resultado → "No encontrado"
+    result = {}
+    for k, v in validated.model_dump().items():
+        if v is not None:
+            result[k] = v
+        elif k in _URL_FIELDS and k in empty_fields:
+            result[k] = "No encontrado"
+    return result

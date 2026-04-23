@@ -11,6 +11,7 @@ _FIELD_UNITS = {
     "ram_kb":          "número en kilobytes (KB)",
     "rom_kb":          "número en kilobytes (KB). 0 si no tiene",
     "familia_ic":      "string. Familia o arquitectura (Ej: TTL, CMOS, AVR, ARM Cortex-M0, RISC-V)",
+    "procesador":      "string. Modelo o núcleo del procesador (Ej: ESP32, STM32F411, ATmega328P, RP2040)",
     "encapsulado":     "string con nomenclatura estándar (Ej: THT, SMD, DIP-8, QFP-32, QFN-40, 0603, 0805)",
     "wifi":            "true o false",
     "bt":              "true o false (Bluetooth)",
@@ -18,6 +19,9 @@ _FIELD_UNITS = {
     "lora":            "true o false",
     "description":     "string HTML simple, un párrafo <p> en español, máximo 3 frases",
     "notes":           "string HTML simple con notas técnicas relevantes en español, o null",
+    "datasheet_url":   "URL directa al datasheet oficial del fabricante (PDF). null si no la conoces con certeza",
+    "image_url":       "URL directa a una imagen del componente (PNG/JPG). null si no la conoces con certeza",
+    "pinout_url":      "URL directa a un diagrama de pinout del componente (imagen o PDF). null si no la conoces con certeza",
 }
 
 

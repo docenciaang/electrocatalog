@@ -31,19 +31,19 @@ _TIPO_CAMPOS = {
     'resistencia':      ('valor_ohm',),
     'condensador':      ('capacitancia_uf',),
     'inductor':         ('inductancia_uh',),
-    'ic':               ('familia_ic', 'pinout_url'),
-    'microcontrolador': ('familia_ic', 'pinout_url', 'flash_kb', 'ram_kb', 'rom_kb',
+    'ic':               ('familia_ic',),
+    'microcontrolador': ('familia_ic', 'flash_kb', 'ram_kb', 'rom_kb',
                          'voltaje_op_v', 'wifi', 'bt', 'zigbee', 'lora', 'frecuencia_mhz',
                          'procesador'),
 }
 _ALL_SPECIFIC = frozenset({
     'valor_ohm', 'capacitancia_uf', 'inductancia_uh',
-    'familia_ic', 'pinout_url',
+    'familia_ic',
     'flash_kb', 'ram_kb', 'rom_kb', 'voltaje_op_v',
     'wifi', 'bt', 'zigbee', 'lora', 'frecuencia_mhz',
     'procesador',
 })
-_SPECIFIC_STR  = frozenset({'familia_ic', 'pinout_url', 'procesador'})
+_SPECIFIC_STR  = frozenset({'familia_ic', 'procesador'})
 _SPECIFIC_BOOL = frozenset({'wifi', 'bt', 'zigbee', 'lora'})
 
 
@@ -54,6 +54,7 @@ def _apply_tech_fields(component, form, category_tipo=None):
     component.tolerancia    = _float_or_none(form.get('tolerancia'))
     component.potencia_w    = _float_or_none(form.get('potencia_w'))
     component.voltaje_max_v = _float_or_none(form.get('voltaje_max_v'))
+    component.pinout_url    = form.get('pinout_url', '').strip() or None
 
     # Campos específicos: solo los del tipo activo; el resto se limpia a None/False
     allowed = frozenset(_TIPO_CAMPOS.get(category_tipo, ()))
